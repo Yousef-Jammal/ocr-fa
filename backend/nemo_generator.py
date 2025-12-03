@@ -27,6 +27,7 @@ class NeMoTextGenerator:
         self.model = None
         self.tokenizer = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self._used_ids = set()  # Track unique IDs
         
         if TRANSFORMERS_AVAILABLE:
             try:
@@ -189,12 +190,13 @@ class NeMoTextGenerator:
     
     def _generate_string(
         self,
+        field_name: str,
         field_spec: Dict[str, Any],
         constraints: Optional[Dict[str, Any]]
     ) -> str:
         """🔥 ENHANCED: Generate realistic string values based on field context"""
         
-        field_name = field_spec.get("name", "").lower()
+        field_name = field_name.lower()
         examples = field_spec.get("examples", [])
         
         if examples:
@@ -286,13 +288,30 @@ class NeMoTextGenerator:
     
     def _generate_integer(
         self,
+        field_name: str,
         field_spec: Dict[str, Any],
         constraints: Optional[Dict[str, Any]]
     ) -> int:
-        """Generate integer value"""
+        """🔥 ENHANCED: Generate unique IDs for ID fields"""
         
+        field_name_lower = field_name.lower()
         min_val = field_spec.get("minimum", 0)
         max_val = field_spec.get("maximum", 100)
+        
+        # Generate unique IDs for ID fields
+        if "id" in field_name_lower and "_id" in field_name_lower:
+            # Use the provided range, or default to 100000-999999
+            id_min = max(min_val, 1)
+            id_max = max(max_val, id_min + 1000)
+            
+            unique_id = random.randint(id_min, id_max)
+            attempts = 0
+            while unique_id in self._used_ids and attempts < 100:
+                unique_id = random.randint(id_min, id_max)
+                attempts += 1
+            
+            self._used_ids.add(unique_id)
+            return unique_id
         
         return random.randint(min_val, max_val)
     
@@ -307,6 +326,40 @@ class NeMoTextGenerator:
         max_val = field_spec.get("maximum", 100.0)
         
         return random.uniform(min_val, max_val)
+    
+    def _generate_datetime(self, field_name: str) -> str:
+        """Generate realistic datetime based on field context"""
+        from datetime import timedelta
+        
+        field_name_lower = field_name.lower()
+        now = datetime.now()
+        
+        if "birth" in field_name_lower or "dob" in field_name_lower:
+            # Generate birth dates between 1-120 years ago
+            years_ago = random.randint(1, 120)
+            date = now - timedelta(days=years_ago * 365)
+            return date.strftime("%Y-%m-%d")
+        
+        if "last" in field_name_lower or "recent" in field_name_lower or "visit" in field_name_lower:
+            # Recent dates within last 2 years
+            days_ago = random.randint(0, 730)
+            date = now - timedelta(days=days_ago)
+            return date.strftime("%Y-%m-%d")
+        
+        return now.isoformat()
+    
+    def _generate_email(self, field_name: str) -> str:
+        """Generate realistic email addresses"""
+        domains = ["gmail.com", "yahoo.com", "outlook.com", "hospital.org", "clinic.com", "healthcare.net"]
+        prefixes = ["contact", "emergency", "info", "patient", "admin", "support"]
+        
+        if "emergency" in field_name.lower():
+            return f"{random.choice(prefixes)}{random.randint(1, 999)}@{random.choice(domains)}"
+        
+        first_names = ["john", "jane", "michael", "sarah", "david", "emma", "robert", "lisa"]
+        last_names = ["smith", "johnson", "williams", "brown", "jones", "garcia", "miller", "davis"]
+        
+        return f"{random.choice(first_names)}.{random.choice(last_names)}{random.randint(1, 99)}@{random.choice(domains)}"
     
     def _create_prompt_from_schema(
         self,
@@ -486,10 +539,10 @@ class NeMoTextGenerator:
                                 validated_sample[field_name] = str(value)
                         except (ValueError, TypeError):
                             # Use fallback value
-                            validated_sample[field_name] = self._generate_field_value(field_spec, None)
+                            validated_sample[field_name] = self._generate_field_value(field_name, field_spec, None)
                     else:
                         # Field missing, generate fallback
-                        validated_sample[field_name] = self._generate_field_value(field_spec, None)
+                        validated_sample[field_name] = self._generate_field_value(field_name, field_spec, None)
                 
                 return validated_sample
         except json.JSONDecodeError:
@@ -502,25 +555,25 @@ class NeMoTextGenerator:
         """Generate a sample using template logic when LLM fails"""
         sample = {}
         for field_name, field_spec in schema.items():
-            sample[field_name] = self._generate_field_value(field_spec, constraints)
+            sample[field_name] = self._generate_field_value(field_name, field_spec, constraints)
         return sample
     
-    def _generate_field_value(self, field_spec: Dict[str, Any], constraints: Optional[Dict[str, Any]]) -> Any:
+    def _generate_field_value(self, field_name: str, field_spec: Dict[str, Any], constraints: Optional[Dict[str, Any]]) -> Any:
         """Generate a single field value based on spec"""
         field_type = field_spec.get("type", "string")
         
         if field_type == "string":
-            return self._generate_string(field_spec, constraints)
+            return self._generate_string(field_name, field_spec, constraints)
         elif field_type == "integer":
-            return self._generate_integer(field_spec, constraints)
+            return self._generate_integer(field_name, field_spec, constraints)
         elif field_type == "float":
             return self._generate_float(field_spec, constraints)
         elif field_type == "boolean":
             return random.choice([True, False])
         elif field_type == "datetime":
-            return datetime.now().isoformat()
+            return self._generate_datetime(field_name)
         elif field_type == "email":
-            return f"user{random.randint(1000, 9999)}@example.com"
+            return self._generate_email(field_name)
         elif field_type == "url":
             return f"https://example.com/resource/{random.randint(1000, 9999)}"
         else:
