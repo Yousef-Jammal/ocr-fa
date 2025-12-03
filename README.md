@@ -4,11 +4,11 @@ A streamlined system for generating synthetic tabular data and images using **Qw
 
 ## Features
 
-- **📊 Text Data Generation**: Schema-driven business data with type validation
-- **🖼️ Image Generation**: Stable Diffusion with prompt-based synthesis
-- **⚡ Unified Generation**: Combined text + image datasets
-- **📋 Job Tracking**: Async background processing with progress monitoring
-- **🎨 Modern UI**: Clean web interface with real-time updates
+- ** Text Data Generation**: Schema-driven business data with type validation
+- ** Image Generation**: Stable Diffusion with prompt-based synthesis
+- ** Unified Generation**: Combined text + image datasets
+- ** Job Tracking**: Async background processing with progress monitoring
+- ** Modern UI**: Clean web interface with real-time updates
 
 ## Architecture
 
