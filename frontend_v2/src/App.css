@@ -1,0 +1,648 @@
+/* NVIDIA Brand Colors */
+:root {
+  --nvidia-green: #76b900;
+  --nvidia-dark: #000000;
+  --nvidia-gray: #1a1a1a;
+  --nvidia-light-gray: #2a2a2a;
+  --nvidia-accent: #00ff41;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --success: #76b900;
+  --warning: #ffb700;
+  --error: #ff4444;
+  --info: #00d4ff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--nvidia-dark);
+  color: var(--text-primary);
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--nvidia-dark) 0%, var(--nvidia-gray) 100%);
+  border-bottom: 3px solid var(--nvidia-green);
+  padding: 2rem 2rem;
+  box-shadow: 0 4px 20px rgba(118, 185, 0, 0.3);
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.nvidia-eye {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--nvidia-green), var(--nvidia-accent));
+  border-radius: 50% 0 50% 50%;
+  position: relative;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 20px rgba(118, 185, 0, 0.5);
+}
+
+.eye-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: var(--nvidia-dark);
+  border-radius: 50%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(118, 185, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(118, 185, 0, 0.8);
+  }
+}
+
+.logo h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--nvidia-green), var(--nvidia-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-left: 66px;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 2rem 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--nvidia-gray);
+  border-bottom: 1px solid var(--nvidia-light-gray);
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab:hover {
+  color: var(--nvidia-green);
+  background: rgba(118, 185, 0, 0.1);
+}
+
+.tab.active {
+  color: var(--nvidia-green);
+  border-bottom-color: var(--nvidia-green);
+  background: rgba(118, 185, 0, 0.15);
+}
+
+.tab-icon {
+  font-size: 1.2rem;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  background: var(--nvidia-dark);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  height: 100%;
+}
+
+/* Panels */
+.config-panel,
+.jobs-panel {
+  background: var(--nvidia-gray);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid var(--nvidia-light-gray);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  height: fit-content;
+}
+
+.panel-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--nvidia-green);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Forms */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input,
+.select,
+.textarea {
+  background: var(--nvidia-light-gray);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-size: 0.9rem;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--nvidia-green);
+  box-shadow: 0 0 0 3px rgba(118, 185, 0, 0.2);
+}
+
+.select {
+  cursor: pointer;
+}
+
+/* Checkboxes */
+.checkbox-group {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  text-transform: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--nvidia-green);
+}
+
+/* Generate Button */
+.generate-btn {
+  background: linear-gradient(135deg, var(--nvidia-green), var(--nvidia-accent));
+  color: var(--nvidia-dark);
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(118, 185, 0, 0.4);
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(118, 185, 0, 0.6);
+}
+
+.generate-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.generate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Info Box */
+.info-box {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid var(--info);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--text-secondary);
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+}
+
+/* Jobs Panel */
+.jobs-panel {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.jobs-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.jobs-panel::-webkit-scrollbar-track {
+  background: var(--nvidia-light-gray);
+  border-radius: 4px;
+}
+
+.jobs-panel::-webkit-scrollbar-thumb {
+  background: var(--nvidia-green);
+  border-radius: 4px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-subtitle {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Job Cards */
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-card {
+  background: var(--nvidia-light-gray);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.job-card.running {
+  border-left-color: var(--info);
+  animation: shimmer 2s infinite;
+}
+
+.job-card.completed {
+  border-left-color: var(--success);
+}
+
+.job-card.failed {
+  border-left-color: var(--error);
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+  }
+}
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.job-type {
+  background: var(--nvidia-green);
+  color: var(--nvidia-dark);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+}
+
+.job-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.job-status.pending {
+  background: rgba(176, 176, 176, 0.2);
+  color: var(--text-secondary);
+}
+
+.job-status.running {
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--info);
+}
+
+.job-status.completed {
+  background: rgba(118, 185, 0, 0.2);
+  color: var(--success);
+}
+
+.job-status.failed {
+  background: rgba(255, 68, 68, 0.2);
+  color: var(--error);
+}
+
+.job-time {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Progress Bar */
+.progress-bar {
+  width: 100%;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  overflow: hidden;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--nvidia-green), var(--nvidia-accent));
+  border-radius: 15px;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progress-shine 2s infinite;
+}
+
+@keyframes progress-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  color: var(--nvidia-dark);
+  font-weight: 700;
+  font-size: 0.85rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Job Outputs */
+.job-outputs {
+  background: rgba(118, 185, 0, 0.1);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.output-label {
+  font-weight: 700;
+  color: var(--nvidia-green);
+  margin-bottom: 0.5rem;
+}
+
+.job-outputs p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.output-file {
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.output-info {
+  color: var(--info);
+  font-size: 0.85rem;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, var(--nvidia-green), var(--nvidia-accent));
+  color: var(--nvidia-dark);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.75rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(118, 185, 0, 0.4);
+}
+
+/* Job Error */
+.job-error {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: var(--error);
+}
+
+.job-id {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--nvidia-light-gray);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+}
+
+/* Footer */
+.footer {
+  background: var(--nvidia-gray);
+  border-top: 1px solid var(--nvidia-light-gray);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jobs-panel {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1.5rem 1rem;
+  }
+
+  .logo h1 {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    margin-left: 58px;
+  }
+
+  .nav-tabs {
+    padding: 0.5rem 1rem 0;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .config-panel,
+  .jobs-panel {
+    padding: 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .checkbox-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.job-card {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--nvidia-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--nvidia-green);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nvidia-accent);
+}
