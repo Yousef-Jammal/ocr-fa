@@ -1,249 +1,345 @@
-# Synthetic Data Generator v2.0 🎯
+# Synthetic Data Generator (SDG) v2.0 🎯
 
-A streamlined system for generating synthetic tabular data and images using **Qwen2.5-1.5B-Instruct** (text) and **Stable Diffusion v1.5** (images).
+A FastAPI-based service and lightweight frontend for generating synthetic tabular data and images. SDG uses Qwen2.5-1.5B-Instruct for structured text generation and Stable Diffusion v1.5 for image synthesis, and provides job tracking and a simple web UI for rapid prototyping.
 
-## Features
+## Overview
 
-- ** Text Data Generation**: Schema-driven business data with type validation
-- ** Image Generation**: Stable Diffusion with prompt-based synthesis
-- ** Unified Generation**: Combined text + image datasets
-- ** Job Tracking**: Async background processing with progress monitoring
-- ** Modern UI**: Clean web interface with real-time updates
+SDG helps teams create realistic, schema-driven tabular datasets and prompt-driven image datasets for testing, demos, and model evaluation. It supports:
+- Schema-first text generation with type validation
+- Prompt-based image generation (Stable Diffusion)
+- Unified runs that pair text rows with generated images
+- Asynchronous background jobs and progress monitoring
+- A minimal frontend for building schemas and monitoring jobs
 
 ## Architecture
 
+- Runtime: Python 3.11 (FastAPI)
+- API Framework: FastAPI (uvicorn)
+- Text Model: Qwen2.5-1.5B-Instruct (CUDA-enabled)
+- Image Model: runwayml/stable-diffusion-v1-5 (Diffusers, FP16)
+- Persistence: Local filesystem for generated outputs (generated_data/)
+- Background processing: FastAPI background tasks / async workers
+- Frontend: Static HTML/CSS/JS (vanilla)
+
+## Base URL (Local dev)
+
 ```
-Backend (FastAPI):
-- Qwen2.5-1.5B-Instruct for structured text generation
-- Stable Diffusion v1.5 for image synthesis
-- Lazy-loaded generators for fast startup
-- CORS-enabled API with background task processing
-
-Frontend (Vanilla HTML/CSS/JS):
-- Schema builder with visual field editor
-- Multi-prompt image generation
-- Real-time job status updates
-- Responsive design
-```
-
-## Setup
-
-### 1. Backend Setup
-
-```powershell
-cd backend
-
-# Activate Python 3.11 environment
-.\venv311\Scripts\activate
-
-# Install dependencies (if not already installed)
-pip install -r requirements.txt
-
-# Start the API server
-uvicorn main:app --reload
+http://localhost:8000
 ```
 
-The server will start at `http://localhost:8000`
+## Health and Status
 
-**API Documentation**: Visit `http://localhost:8000/docs` for interactive Swagger UI
+### GET /health
+Returns system health and model status.
 
-### 2. Frontend Setup
-
-Open `frontend/index.html` directly in your browser, or serve it:
-
-```powershell
-cd frontend
-python -m http.server 3000
+Response example:
+```json
+{
+  "status": "healthy",
+  "text_model": "qwen2.5-instruct (loaded)",
+  "image_model": "stable-diffusion-v1-5 (loaded)",
+  "jobs_in_progress": 0
+}
 ```
 
-Then visit `http://localhost:3000`
+Status codes:
+- 200 OK — Service is healthy
+- 500 Internal Server Error — Service is degraded
 
-## Usage
-
-### Via Web UI
-
-1. **Text Data**:
-   - Build your schema using the visual editor
-   - Add fields with names and types (string, int, float, bool)
-   - Set number of samples
-   - Choose output format (JSON/CSV)
-   - Click "Generate"
-
-2. **Images**:
-   - Enter prompts (one per line)
-   - Set number of images and scene type
-   - Optionally enable bounding box annotations
-   - Click "Generate"
-
-3. **Unified**:
-   - Configure both text schema (JSON format)
-   - Add image prompts
-   - Generate combined dataset
-
-4. **Jobs**:
-   - Monitor all active/completed jobs
-   - View progress and results
-   - Auto-refreshes every 3 seconds
-
-### Via API (Python)
-
-```python
-import requests
-
-# Text generation
-response = requests.post('http://localhost:8000/generate/text', json={
-    "schema": {
-        "customer_name": "string",
-        "age": "int",
-        "order_value": "float"
-    },
-    "num_samples": 100,
-    "output_format": "json"
-})
-job_id = response.json()['job_id']
-
-# Check status
-status = requests.get(f'http://localhost:8000/status/{job_id}').json()
-print(f"Progress: {status['progress']}%")
-
-# Image generation
-response = requests.post('http://localhost:8000/generate/images', json={
-    "prompts": [
-        "A modern warehouse interior",
-        "An outdoor retail storefront"
-    ],
-    "num_images": 10,
-    "resolution": [512, 512],
-    "annotations": ["bbox"]
-})
-```
-
-### Via cURL
-
-```bash
-# Text generation
-curl -X POST "http://localhost:8000/generate/text" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "schema": {"name": "string", "age": "int"},
-    "num_samples": 50,
-    "output_format": "csv"
-  }'
-
-# Image generation
-curl -X POST "http://localhost:8000/generate/images" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompts": ["A product on white background"],
-    "num_images": 5,
-    "resolution": [512, 512]
-  }'
-```
+---
 
 ## API Endpoints
 
-- `GET /` - API info and status
-- `GET /health` - Health check with model status
-- `POST /generate/text` - Generate tabular data
-- `POST /generate/images` - Generate images with SD
-- `POST /generate/unified` - Generate text + images
-- `GET /status/{job_id}` - Check job status
-- `GET /jobs` - List all jobs
+All endpoints are mounted on the base URL above.
 
-## Output Structure
+### GET /
+API info and basic status.
 
-### Text Data
+### POST /generate/text
+Generate tabular/text data from a schema.
+
+Request body (JSON):
+```json
+{
+  "schema": {
+    "customer_name": "string",
+    "age": "int",
+    "order_value": "float"
+  },
+  "num_samples": 100,
+  "output_format": "json"
+}
 ```
+
+Response (202 Accepted):
+```json
+{
+  "job_id": "job_012345",
+  "message": "Text generation job queued"
+}
+```
+
+### POST /generate/images
+Generate images from prompts.
+
+Request body (JSON):
+```json
+{
+  "prompts": [
+    "A modern warehouse interior",
+    "An outdoor retail storefront"
+  ],
+  "num_images": 10,
+  "resolution": [512, 512],
+  "annotations": ["bbox"]
+}
+```
+
+Response (202 Accepted):
+```json
+{
+  "job_id": "job_987654",
+  "message": "Image generation job queued"
+}
+```
+
+### POST /generate/unified
+Generate combined text + images. Accepts a text schema and image prompts; returns a job id for a combined output package.
+
+Request body example:
+```json
+{
+  "schema": {"id": "int", "product": "string", "price": "float"},
+  "num_samples": 50,
+  "prompts": ["A product on white background"],
+  "output_format": "json"
+}
+```
+
+### GET /status/{job_id}
+Check job progress and retrieve results when complete.
+
+Response example:
+```json
+{
+  "job_id": "job_012345",
+  "status": "completed",
+  "progress": 100,
+  "output_path": "generated_data/text_data_2025-12-03_120000/"
+}
+```
+
+### GET /jobs
+List all jobs (queued, running, completed).
+
+Response example:
+```json
+[
+  {
+    "job_id": "job_012345",
+    "type": "text",
+    "status": "completed",
+    "created_at": "2025-12-03T12:00:00Z"
+  }
+]
+```
+
+---
+
+## Usage
+
+### Web UI
+- Open frontend/index.html (or run a static server) and visit the site.
+- Build a schema using the visual editor (field name + type).
+- Set number of samples and output format (JSON/CSV).
+- For images, enter prompts (one per line) and set image options.
+- Submit a job and monitor its progress in the Jobs panel.
+
+### API (Python)
+```python
+import requests
+
+# Submit text generation job
+r = requests.post('http://localhost:8000/generate/text', json={
+    "schema": {"name": "string", "age": "int"},
+    "num_samples": 50,
+    "output_format": "csv"
+})
+job_id = r.json()["job_id"]
+
+# Poll for status
+status = requests.get(f'http://localhost:8000/status/{job_id}').json()
+print(status)
+```
+
+### cURL
+```bash
+curl -X POST "http://localhost:8000/generate/text" \
+  -H "Content-Type: application/json" \
+  -d '{"schema":{"name":"string","age":"int"},"num_samples":50,"output_format":"csv"}'
+```
+
+---
+
+## Output Layout
+
+Text example:
 generated_data/
-  text_data_20240101_120000/
-    data.json          # Generated samples
-    schema.json        # Schema definition
-```
+  text_data_YYYYMMDD_HHMMSS/
+    data.json
+    schema.json
 
-### Images
-```
+Images example:
 generated_data/
-  images_20240101_120000/
+  images_YYYYMMDD_HHMMSS/
     images/
       image_00000.png
-      image_00001.png
-      ...
     annotations/
-      annotations.json  # COCO format (if enabled)
-```
+      annotations.json  # optional COCO-like annotations
 
-## Models
+---
 
-- **Text**: Qwen/Qwen2.5-1.5B-Instruct (3.09 GB)
-  - First load: ~35 minutes (downloads model)
-  - Subsequent loads: ~30 seconds (cached)
-  - CUDA-enabled for GTX 1650 Ti
+## Models & Performance
 
-- **Images**: runwayml/stable-diffusion-v1-5 (~4 GB)
-  - Runs at FP16 precision on CUDA
-  - 30 inference steps per image
-  - Guidance scale: 7.5
+- Text: Qwen2.5-1.5B-Instruct
+  - First load may download the model (~3.1 GB) and take time
+  - Subsequent loads are faster with local caching
+  - Typical throughput: ~2–5s per sample on CUDA (varies by GPU & batch size)
+
+- Images: Stable Diffusion v1.5
+  - FP16 on CUDA, default 30 inference steps, guidance 7.5
+  - Typical throughput: ~8–12s per 512×512 image (varies by GPU)
+
+Hardware guidance:
+- CUDA-capable GPU recommended (GTX 1650 Ti or better)
+- ~4–6 GB VRAM for minimal image runs
+- ~10 GB disk for models
+
+---
 
 ## Requirements
 
-- Python 3.11 (venv311)
-- CUDA-capable GPU (GTX 1650 Ti or better)
-- ~10 GB disk space for models
-- ~4-6 GB VRAM for generation
+- Python 3.11
+- CUDA toolkit (for GPU acceleration)
+- pip dependencies: see backend/requirements.txt
+- Optional: A GPU with NVIDIA drivers and compatible PyTorch build
 
-## Testing
+---
 
-```powershell
-# Test API endpoints
+## Local Setup
+
+Backend:
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate   # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+Frontend:
+```bash
+cd frontend
+python -m http.server 3000
+# then open http://localhost:3000
+```
+
+Testing:
+```bash
 cd backend
 python test_v2_api.py
-
-# Test Qwen model directly
 python test_qwen.py
-
-# Test imports
 python test_imports.py
 ```
 
+---
+
+## Environment Variables
+
+Set these for production or advanced local config:
+
+```bash
+# Optional CUDA / device overrides
+SDG_DEVICE=cuda
+# Model cache / storage
+MODEL_CACHE_DIR=/path/to/model_cache
+# FastAPI recommended settings
+UVICORN_HOST=0.0.0.0
+UVICORN_PORT=8000
+```
+
+---
+
 ## Troubleshooting
 
-**API won't start:**
-- Check if venv311 is activated: `.\venv311\Scripts\activate`
-- Verify CUDA: `python check_cuda.py`
-- Check port 8000: `netstat -ano | findstr :8000`
+- API won't start: ensure Python venv is activated and uvicorn is installed; check port 8000 availability.
+- Model download fails: confirm internet connection and free disk space (~10 GB).
+- GPU issues: confirm CUDA drivers and compatible PyTorch build (check python check_cuda.py).
+- Frontend can't connect: verify API health at /health and CORS in backend main.py.
 
-**Model loading fails:**
-- Check internet connection (first-time download)
-- Check disk space (~10 GB needed)
-- Check VRAM (~4 GB minimum)
+---
 
-**Frontend can't connect:**
-- Verify API is running: visit `http://localhost:8000/health`
-- Check CORS is enabled in main.py
-- Try opening browser console for errors
+## Authentication & Security
 
-## Performance
+This PoC ships without authentication. For production consider:
+- API key or JWT authentication
+- Rate limiting and request validation
+- Model access restrictions and logging
+- Secrets management for API keys and model tokens
 
-**Text Generation:**
-- ~2-5 seconds per sample (Qwen2.5-1.5B on CUDA)
-- Batch size: 1 (streaming generation)
+---
 
-**Image Generation:**
-- ~8-12 seconds per image (SD v1.5 on CUDA)
-- Resolution: 512x512 default
-- Can generate up to 100 images per request
+## Error Responses
 
-## Development
+Errors follow FastAPI standard:
+```json
+{"detail": "Error message"}
+```
+Common statuses:
+- 200 OK — Success
+- 201 Created — Resource created
+- 202 Accepted — Job queued
+- 400 Bad Request — Invalid input
+- 404 Not Found — Resource missing
+- 500 Internal Server Error — Server problem
 
-Built with:
-- FastAPI 0.123.4
-- Transformers 4.57.3
-- Diffusers 0.35.2
-- PyTorch 2.5.1+cu121
-- NeMo 2.5.3 (base toolkit)
+---
 
-## License
+## Deployment & Costs
 
-This project uses:
-- Qwen2.5-1.5B-Instruct: Apache 2.0
-- Stable Diffusion v1.5: CreativeML Open RAIL-M
+This repository targets local and cloud development environments. If deploying to cloud:
+- Containerize backend
+- Use GPU-enabled hosts for model inference
+- Consider storage for generated datasets (S3/Blob storage)
+- Monitor costs for GPU instances and storage
+
+Estimated local resource needs:
+- Disk: ~10 GB
+- VRAM: 4–6 GB (min)
+- CPU + memory: depends on concurrency
+
+---
+
+## Development & Contributing
+
+- FastAPI backend (backend/)
+- Static frontend (frontend/)
+- Tests under backend/
+- To contribute, open issues or PRs describing the feature or bug. Follow repository code style and run tests locally.
+
+---
+
+## License & Models
+
+- Project code: see LICENSE in repository
+- Qwen2.5-1.5B-Instruct: Apache-2.0 (follow model terms)
+- Stable Diffusion v1.5: CreativeML Open RAIL-M (follow model license and safety guidance)
+
+---
+
+## Support
+
+If you run into issues:
+1. Check interactive docs at http://localhost:8000/docs
+2. Inspect backend logs for errors
+3. Open an issue on the repository with reproduction steps and logs
