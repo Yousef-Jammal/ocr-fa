@@ -49,10 +49,10 @@ The server will start at `http://localhost:8000`
 
 ### 2. Frontend Setup
 
-Open `frontend_v2/index.html` directly in your browser, or serve it:
+Open `frontend/index.html` directly in your browser, or serve it:
 
 ```powershell
-cd frontend_v2
+cd frontend
 python -m http.server 3000
 ```
 
