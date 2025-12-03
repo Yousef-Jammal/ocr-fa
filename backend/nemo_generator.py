@@ -83,18 +83,21 @@ class NeMoTextGenerator:
         format: str,
         constraints: Optional[Dict[str, Any]]
     ) -> Any:
-        """Generate using Qwen2.5 model"""
+        """Generate using Qwen2.5 model with enhanced prompting"""
         
         samples = []
         
+        # 🔥 ENHANCEMENT 1: Generate few-shot examples from schema
+        few_shot_examples = self._generate_few_shot_examples(schema, num_examples=2)
+        
         for i in range(num_samples):
-            # Create prompt from schema
-            prompt = self._create_prompt_from_schema(schema, constraints)
+            # Create enhanced prompt with examples
+            prompt = self._create_enhanced_prompt(schema, constraints, few_shot_examples)
             
             # Generate with Qwen
             try:
                 messages = [
-                    {"role": "system", "content": "You are a data generation assistant. Generate realistic structured data exactly matching the provided schema. Output valid JSON only."},
+                    {"role": "system", "content": "You are an expert synthetic data generator. Generate highly realistic, diverse, and contextually accurate structured data. Follow the schema precisely and ensure data relationships are logical. Output ONLY valid JSON without any explanations."},
                     {"role": "user", "content": prompt}
                 ]
                 
@@ -106,13 +109,17 @@ class NeMoTextGenerator:
                 
                 model_inputs = self.tokenizer([text], return_tensors="pt").to(self.device)
                 
+                # 🔥 ENHANCEMENT 2: Better generation parameters for quality
                 with torch.no_grad():
                     generated_ids = self.model.generate(
                         **model_inputs,
-                        max_new_tokens=512,
-                        temperature=0.7,
+                        max_new_tokens=768,  # Increased for complex schemas
+                        temperature=0.8,  # Slightly higher for diversity
                         do_sample=True,
-                        top_p=0.9
+                        top_p=0.92,  # Adjusted for better quality
+                        top_k=50,  # Add top_k sampling
+                        repetition_penalty=1.1,  # Reduce repetition
+                        no_repeat_ngram_size=3  # Prevent phrase repetition
                     )
                 
                 generated_ids = [
@@ -121,9 +128,18 @@ class NeMoTextGenerator:
                 
                 response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
                 
-                # Parse response into structured data
+                # 🔥 ENHANCEMENT 3: Better parsing with validation
                 sample = self._parse_llm_response(response, schema)
-                samples.append(sample)
+                
+                # Validate sample quality
+                if self._validate_sample_quality(sample, schema):
+                    samples.append(sample)
+                else:
+                    print(f"Sample {i} failed quality check, regenerating...")
+                    # Retry with different temperature
+                    sample = self._generate_fallback_sample(schema, constraints)
+                    samples.append(sample)
+                    
             except Exception as e:
                 print(f"Error generating sample {i}: {e}")
                 # Fallback to template generation for this sample
@@ -176,28 +192,97 @@ class NeMoTextGenerator:
         field_spec: Dict[str, Any],
         constraints: Optional[Dict[str, Any]]
     ) -> str:
-        """Generate string value"""
+        """🔥 ENHANCED: Generate realistic string values based on field context"""
         
+        field_name = field_spec.get("name", "").lower()
         examples = field_spec.get("examples", [])
+        
         if examples:
             return random.choice(examples)
         
-        min_length = field_spec.get("min_length", 5)
-        max_length = field_spec.get("max_length", 20)
-        length = random.randint(min_length, max_length)
+        # 🔥 Context-aware generation based on field name
+        if "name" in field_name or "customer" in field_name or "user" in field_name:
+            first_names = ["John", "Emma", "Michael", "Sophia", "William", "Olivia", "James", "Ava", "Robert", "Isabella"]
+            last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"]
+            if "full" in field_name or "holder" in field_name:
+                return f"{random.choice(first_names)} {random.choice(last_names)}"
+            elif "first" in field_name:
+                return random.choice(first_names)
+            elif "last" in field_name or "surname" in field_name:
+                return random.choice(last_names)
+            return f"{random.choice(first_names)} {random.choice(last_names)}"
         
-        # Generate random words
-        words = ["the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
-                 "cat", "mouse", "bird", "fish", "tree", "house", "car", "book"]
+        if "email" in field_name or "mail" in field_name:
+            domains = ["gmail.com", "yahoo.com", "outlook.com", "company.com", "example.com"]
+            names = ["john.doe", "jane.smith", "user", "contact", "info"]
+            return f"{random.choice(names)}{random.randint(1, 999)}@{random.choice(domains)}"
+        
+        if "phone" in field_name or "mobile" in field_name or "tel" in field_name:
+            return f"+1-{random.randint(200, 999)}-{random.randint(200, 999)}-{random.randint(1000, 9999)}"
+        
+        if "address" in field_name or "street" in field_name:
+            streets = ["Main St", "Oak Ave", "Maple Dr", "Park Blvd", "Washington St", "First Ave"]
+            return f"{random.randint(1, 9999)} {random.choice(streets)}"
+        
+        if "city" in field_name:
+            cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego"]
+            return random.choice(cities)
+        
+        if "country" in field_name:
+            countries = ["USA", "Canada", "UK", "Germany", "France", "Spain", "Italy", "Japan"]
+            return random.choice(countries)
+        
+        if "state" in field_name or "province" in field_name:
+            states = ["CA", "NY", "TX", "FL", "IL", "PA", "OH", "GA", "NC", "MI"]
+            return random.choice(states)
+        
+        if "zip" in field_name or "postal" in field_name:
+            return f"{random.randint(10000, 99999)}"
+        
+        if "product" in field_name or "item" in field_name:
+            products = ["Laptop", "Smartphone", "Tablet", "Headphones", "Camera", "Monitor", "Keyboard", "Mouse"]
+            return random.choice(products)
+        
+        if "description" in field_name or "comment" in field_name or "note" in field_name:
+            descriptions = [
+                "High quality product with excellent features",
+                "Premium service with fast delivery",
+                "Reliable and efficient solution",
+                "Customer satisfaction guaranteed",
+                "Industry leading performance"
+            ]
+            return random.choice(descriptions)
+        
+        if "id" in field_name or "code" in field_name:
+            return f"{random.choice(['CUS', 'PRD', 'ORD', 'INV', 'TXN'])}{random.randint(100000, 999999)}"
+        
+        if "currency" in field_name:
+            return random.choice(["USD", "EUR", "GBP", "JPY", "CAD", "AUD"])
+        
+        if "merchant" in field_name or "vendor" in field_name or "store" in field_name:
+            merchants = ["Amazon", "Walmart", "Target", "Best Buy", "Apple Store", "Home Depot", "Costco", "Starbucks"]
+            return random.choice(merchants)
+        
+        if "status" in field_name:
+            return random.choice(["active", "pending", "completed", "cancelled", "processing"])
+        
+        # Default: generate readable text
+        min_length = field_spec.get("min_length", 5)
+        max_length = field_spec.get("maximum", 50)
+        
+        words = ["premium", "quality", "professional", "advanced", "efficient", "reliable", 
+                 "innovative", "modern", "secure", "powerful", "flexible", "optimized"]
         
         result = []
         current_length = 0
-        while current_length < length:
+        target_length = random.randint(min_length, min(max_length, 100))
+        
+        while current_length < target_length:
             word = random.choice(words)
             result.append(word)
             current_length += len(word) + 1
         
-        return " ".join(result)[:length]
+        return " ".join(result)[:target_length].strip()
     
     def _generate_integer(
         self,
@@ -262,6 +347,113 @@ class NeMoTextGenerator:
         prompt += "\nGenerate realistic, valid data as JSON. Output format: {\"field1\": value1, \"field2\": value2, ...}"
         
         return prompt
+    
+    def _create_enhanced_prompt(
+        self,
+        schema: Dict[str, Any],
+        constraints: Optional[Dict[str, Any]],
+        few_shot_examples: List[Dict[str, Any]]
+    ) -> str:
+        """🔥 ENHANCED: Create advanced prompt with few-shot learning"""
+        
+        prompt = "# Task: Generate Realistic Synthetic Data\n\n"
+        prompt += "## Schema Definition:\n"
+        
+        for field_name, field_spec in schema.items():
+            field_type = field_spec.get("type", "string")
+            description = field_spec.get("description", "")
+            
+            prompt += f"### {field_name}\n"
+            prompt += f"- Type: {field_type}\n"
+            
+            if description:
+                prompt += f"- Description: {description}\n"
+            
+            # Add detailed constraints
+            if field_type in ["integer", "float"]:
+                if "minimum" in field_spec:
+                    prompt += f"- Minimum: {field_spec['minimum']}\n"
+                if "maximum" in field_spec:
+                    prompt += f"- Maximum: {field_spec['maximum']}\n"
+            
+            if "examples" in field_spec and field_spec["examples"]:
+                prompt += f"- Valid Examples: {', '.join(map(str, field_spec['examples'][:5]))}\n"
+            
+            if "pattern" in field_spec:
+                prompt += f"- Pattern: {field_spec['pattern']}\n"
+            
+            prompt += "\n"
+        
+        # Add few-shot examples
+        if few_shot_examples:
+            prompt += "## Example Records (for reference):\n\n"
+            for idx, example in enumerate(few_shot_examples, 1):
+                prompt += f"Example {idx}:\n```json\n{json.dumps(example, indent=2)}\n```\n\n"
+        
+        if constraints:
+            prompt += f"## Additional Constraints:\n{json.dumps(constraints, indent=2)}\n\n"
+        
+        prompt += "## Instructions:\n"
+        prompt += "1. Generate ONE new data record following the schema exactly\n"
+        prompt += "2. Ensure all data is realistic and contextually appropriate\n"
+        prompt += "3. Maintain logical relationships between fields\n"
+        prompt += "4. Use diverse values (don't repeat example data)\n"
+        prompt += "5. Output ONLY the JSON object, no explanations\n\n"
+        prompt += "Generate the record now:"
+        
+        return prompt
+    
+    def _generate_few_shot_examples(
+        self,
+        schema: Dict[str, Any],
+        num_examples: int = 2
+    ) -> List[Dict[str, Any]]:
+        """🔥 NEW: Generate few-shot examples for better prompting"""
+        
+        examples = []
+        for i in range(num_examples):
+            example = self._generate_fallback_sample(schema, None)
+            examples.append(example)
+        return examples
+    
+    def _validate_sample_quality(
+        self,
+        sample: Dict[str, Any],
+        schema: Dict[str, Any]
+    ) -> bool:
+        """🔥 NEW: Validate generated sample meets quality standards"""
+        
+        if not sample:
+            return False
+        
+        # Check all required fields present
+        for field_name in schema.keys():
+            if field_name not in sample:
+                return False
+        
+        # Check field types and constraints
+        for field_name, field_spec in schema.items():
+            value = sample.get(field_name)
+            field_type = field_spec.get("type", "string")
+            
+            # Type validation
+            if field_type == "integer" and not isinstance(value, int):
+                return False
+            if field_type == "float" and not isinstance(value, (int, float)):
+                return False
+            if field_type == "boolean" and not isinstance(value, bool):
+                return False
+            if field_type == "string" and not isinstance(value, str):
+                return False
+            
+            # Range validation
+            if field_type in ["integer", "float"]:
+                if "minimum" in field_spec and value < field_spec["minimum"]:
+                    return False
+                if "maximum" in field_spec and value > field_spec["maximum"]:
+                    return False
+        
+        return True
     
     def _parse_llm_response(self, response: str, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Parse LLM response into structured data"""
