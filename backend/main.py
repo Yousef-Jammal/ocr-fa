@@ -615,127 +615,110 @@ Generate the schema now:"""
         
         response = generator.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         
-        # Extract JSON from response
+        # 🔥 IMPROVED: Better JSON extraction with multiple strategies
+        schema = None
+        
+        # Strategy 1: Find JSON object
         start_idx = response.find('{')
         end_idx = response.rfind('}')
         
         if start_idx != -1 and end_idx != -1:
-            schema_json = response[start_idx:end_idx+1]
-            schema = json.loads(schema_json)
-            
-            return {
-                "schema": schema,
-                "description": request.description,
-                "generated_at": datetime.now().isoformat()
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to generate valid schema")
+            try:
+                schema_json = response[start_idx:end_idx+1]
+                schema = json.loads(schema_json)
+            except json.JSONDecodeError:
+                # Strategy 2: Try cleaning markdown code blocks
+                import re
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+                if json_match:
+                    try:
+                        schema = json.loads(json_match.group(1))
+                    except json.JSONDecodeError:
+                        pass
+        
+        # Strategy 3: If still failed, use fallback schema based on description
+        if not schema:
+            print(f"⚠️ AI schema generation failed, using intelligent fallback")
+            schema = _generate_fallback_schema(request.description)
+        
+        # 🔥 Validate schema structure
+        schema = _validate_and_fix_schema(schema)
+        
+        return {
+            "schema": schema,
+            "description": request.description,
+            "generated_at": datetime.now().isoformat()
+        }
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Schema generation failed: {str(e)}")
 
-# ==================== Data Augmentation ====================
-
-from fastapi import UploadFile, File
-import pandas as pd
-
-@app.post("/augment")
-async def augment_data(
-    file: UploadFile = File(...),
-    num_samples: int = 1000,
-    background_tasks: BackgroundTasks = None
-):
-    """🔄 Smart data augmentation - upload CSV, get similar synthetic data"""
+def _generate_fallback_schema(description: str) -> Dict[str, Any]:
+    """🔥 Generate intelligent fallback schema from description keywords"""
+    desc_lower = description.lower()
+    schema = {}
     
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files supported")
+    # Common patterns
+    if any(word in desc_lower for word in ['customer', 'user', 'person', 'employee']):
+        schema.update({
+            "id": {"type": "string", "description": "Unique identifier"},
+            "full_name": {"type": "string", "description": "Full name"},
+            "email": {"type": "email", "description": "Email address"}
+        })
     
-    job_id = str(uuid.uuid4())
-    jobs[job_id] = {
-        "job_id": job_id,
-        "type": "augmentation",
-        "status": "processing",
-        "progress": 0.0,
-        "result": None,
-        "error": None,
-        "created_at": datetime.now().isoformat()
-    }
+    if 'age' in desc_lower:
+        schema["age"] = {"type": "integer", "minimum": 18, "maximum": 100}
     
-    # Schedule augmentation task
-    background_tasks.add_task(_augment_data_task, job_id, file, num_samples)
+    if any(word in desc_lower for word in ['purchase', 'transaction', 'payment', 'order']):
+        schema.update({
+            "amount": {"type": "float", "minimum": 0.01, "maximum": 10000},
+            "date": {"type": "datetime", "description": "Transaction date"}
+        })
     
-    return {"job_id": job_id, "status": "processing"}
-
-async def _augment_data_task(job_id: str, file: UploadFile, num_samples: int):
-    """Background task for data augmentation"""
+    if 'product' in desc_lower:
+        schema["product_name"] = {"type": "string", "description": "Product name"}
     
-    try:
-        jobs[job_id]["progress"] = 10.0
-        
-        # Read CSV
-        content = await file.read()
-        df = pd.read_csv(io.BytesIO(content))
-        
-        jobs[job_id]["progress"] = 20.0
-        
-        # Analyze schema from CSV
-        schema = {}
-        for col in df.columns:
-            dtype = df[col].dtype
-            
-            if pd.api.types.is_integer_dtype(dtype):
-                schema[col] = {
-                    "type": "integer",
-                    "minimum": int(df[col].min()),
-                    "maximum": int(df[col].max())
-                }
-            elif pd.api.types.is_float_dtype(dtype):
-                schema[col] = {
-                    "type": "float",
-                    "minimum": float(df[col].min()),
-                    "maximum": float(df[col].max())
-                }
-            elif pd.api.types.is_bool_dtype(dtype):
-                schema[col] = {"type": "boolean"}
-            else:
-                # String or object - extract examples
-                unique_vals = df[col].unique()[:5].tolist()
-                schema[col] = {
-                    "type": "string",
-                    "examples": [str(v) for v in unique_vals if pd.notna(v)]
-                }
-        
-        jobs[job_id]["progress"] = 40.0
-        
-        # Generate synthetic data using the schema
-        generator = get_text_generator()
-        result = await generator.generate(
-            schema=schema,
-            num_samples=num_samples,
-            format="csv",
-            constraints=None
-        )
-        
-        jobs[job_id]["progress"] = 80.0
-        
-        # Save augmented data
-        output_path = OUTPUT_DIR / f"{job_id}.csv"
-        with open(output_path, "w", newline='') as f:
-            f.write(result)
-        
-        jobs[job_id]["progress"] = 100.0
-        jobs[job_id]["status"] = "completed"
-        jobs[job_id]["result"] = {
-            "file": str(output_path),
-            "samples_generated": num_samples,
-            "original_samples": len(df),
-            "schema": schema
+    if 'price' in desc_lower or 'cost' in desc_lower:
+        schema["price"] = {"type": "float", "minimum": 0.01, "maximum": 9999.99}
+    
+    # Ensure at least some fields
+    if not schema:
+        schema = {
+            "id": {"type": "string"},
+            "name": {"type": "string"},
+            "value": {"type": "string"}
         }
+    
+    return schema
+
+def _validate_and_fix_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """🔥 Validate and fix schema structure"""
+    if not isinstance(schema, dict):
+        return {"field_1": {"type": "string"}}
+    
+    fixed_schema = {}
+    
+    for field_name, field_spec in schema.items():
+        # Ensure field_spec is a dict
+        if not isinstance(field_spec, dict):
+            field_spec = {"type": "string"}
         
-    except Exception as e:
-        jobs[job_id]["status"] = "failed"
-        jobs[job_id]["error"] = str(e)
-        print(f"Augmentation error: {e}")
+        # Ensure type exists
+        if "type" not in field_spec:
+            field_spec["type"] = "string"
+        
+        # Validate type
+        valid_types = ["string", "integer", "float", "boolean", "datetime", "email", "url"]
+        if field_spec["type"] not in valid_types:
+            field_spec["type"] = "string"
+        
+        # Remove invalid keys
+        valid_keys = ["type", "description", "examples", "minimum", "maximum", "unique", "pattern"]
+        field_spec = {k: v for k, v in field_spec.items() if k in valid_keys}
+        
+        fixed_schema[field_name] = field_spec
+    
+    return fixed_schema
 
 # ==================== WebSocket Endpoint ====================
 

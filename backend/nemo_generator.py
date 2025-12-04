@@ -295,8 +295,30 @@ class NeMoTextGenerator:
         
         field_lower = field_name.lower()
         
-        # Check against patterns
+        # Prioritize domain-specific fields before generic ones like "name"
+        priority_order = [
+            'product', 'category', 'price', 'quantity',
+            'company', 'department', 'job', 'salary',
+            'transaction', 'currency', 'card',
+            'first_name', 'last_name',
+            'email', 'phone', 'address', 'city', 'state', 'country', 'zip',
+            'date', 'created', 'updated',
+            'status', 'active',
+            'id', 'uuid',
+            'name'  # generic names come last
+        ]
+        
+        checked = set()
+        for pattern_type in priority_order:
+            patterns = self.field_patterns.get(pattern_type, [])
+            checked.add(pattern_type)
+            if any(p in field_lower for p in patterns):
+                return pattern_type
+        
+        # Check any remaining pattern types
         for pattern_type, patterns in self.field_patterns.items():
+            if pattern_type in checked:
+                continue
             if any(p in field_lower for p in patterns):
                 return pattern_type
         

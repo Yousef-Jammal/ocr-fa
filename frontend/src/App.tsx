@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import { TemplateSelector, AISchemaBuilder, DataAugmenter } from './components'
-import { Template } from './templates'
+import { TemplateSelector, AISchemaBuilder } from './components'
 
 // Types
 interface Job {
@@ -220,11 +219,6 @@ function App() {
                 {/* AI Schema Builder */}
                 <AISchemaBuilder onSchemaGenerated={(schema) => {
                   setTextSchema(JSON.stringify(schema, null, 2))
-                }} />
-
-                {/* Data Augmenter */}
-                <DataAugmenter onAugmented={(jobId) => {
-                  pollJobStatus(jobId)
                 }} />
 
                 <div className="form-group">

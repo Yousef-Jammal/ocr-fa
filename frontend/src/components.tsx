@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { DATASET_TEMPLATES, Template } from './templates'
 
 interface TemplateSelectorProps {
@@ -82,79 +83,3 @@ export const AISchemaBuilder = ({ onSchemaGenerated }: AISchemaBuilderProps) => 
     </div>
   )
 }
-
-interface DataAugmenterProps {
-  onAugmented: (jobId: string) => void
-}
-
-export const DataAugmenter = ({ onAugmented }: DataAugmenterProps) => {
-  const [file, setFile] = useState<File | null>(null)
-  const [numSamples, setNumSamples] = useState(1000)
-  const [augmenting, setAugmenting] = useState(false)
-
-  const handleAugment = async () => {
-    if (!file) {
-      alert('Please select a CSV file')
-      return
-    }
-
-    setAugmenting(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('num_samples', numSamples.toString())
-
-      const response = await fetch(`http://localhost:8000/augment?num_samples=${numSamples}`, {
-        method: 'POST',
-        body: formData
-      })
-      const data = await response.json()
-      onAugmented(data.job_id)
-      alert('✅ Augmentation started!')
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Failed to augment data. Check console for details.')
-    } finally {
-      setAugmenting(false)
-    }
-  }
-
-  return (
-    <div className="data-augmenter">
-      <h3>🔄 Data Augmentation</h3>
-      <p>Upload CSV, AI generates similar but unique data</p>
-      <input
-        type="file"
-        accept=".csv"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
-      {file && (
-        <div className="file-info">
-          📄 {file.name} ({(file.size / 1024).toFixed(2)} KB)
-        </div>
-      )}
-      <div className="augment-controls">
-        <label>
-          Samples to generate:
-          <input
-            type="number"
-            value={numSamples}
-            onChange={(e) => setNumSamples(parseInt(e.target.value))}
-            min={100}
-            max={100000}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={handleAugment}
-          disabled={augmenting || !file}
-          className="augment-btn"
-        >
-          {augmenting ? '⏳ Augmenting...' : '🚀 Augment Data'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-import { useState } from 'react'
