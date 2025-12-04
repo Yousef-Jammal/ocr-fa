@@ -646,3 +646,219 @@ label {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--nvidia-accent);
 }
+
+/* ==================== NEW FEATURES STYLES ==================== */
+
+/* Template Grid */
+.template-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--nvidia-light-gray);
+  border-radius: 12px;
+}
+
+.template-section h3 {
+  color: var(--nvidia-green);
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.template-card {
+  background: var(--nvidia-gray);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.template-card:hover {
+  border-color: var(--nvidia-green);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(118, 185, 0, 0.3);
+}
+
+.template-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.template-card h4 {
+  color: var(--nvidia-green);
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.template-card p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.template-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--nvidia-light-gray);
+}
+
+/* AI Schema Builder */
+.ai-schema-builder {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+  border-radius: 12px;
+  border: 2px solid var(--nvidia-green);
+}
+
+.ai-schema-builder h3 {
+  color: var(--nvidia-green);
+  margin-bottom: 0.5rem;
+}
+
+.ai-schema-builder p {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.ai-schema-builder textarea {
+  width: 100%;
+  background: var(--nvidia-gray);
+  border: 1px solid var(--nvidia-light-gray);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.ai-btn {
+  background: linear-gradient(135deg, var(--nvidia-green) 0%, var(--nvidia-accent) 100%);
+  color: var(--nvidia-dark);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.ai-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(118, 185, 0, 0.4);
+}
+
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Data Augmenter */
+.data-augmenter {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--nvidia-light-gray);
+  border-radius: 12px;
+  border: 2px solid var(--info);
+}
+
+.data-augmenter h3 {
+  color: var(--info);
+  margin-bottom: 0.5rem;
+}
+
+.data-augmenter p {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.data-augmenter input[type="file"] {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--nvidia-gray);
+  border: 2px dashed var(--info);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.file-info {
+  background: var(--nvidia-gray);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  color: var(--nvidia-green);
+}
+
+.augment-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.augment-controls label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.augment-controls input[type="number"] {
+  background: var(--nvidia-gray);
+  border: 1px solid var(--nvidia-light-gray);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.augment-btn {
+  background: linear-gradient(135deg, var(--info) 0%, #00a8cc 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.augment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 212, 255, 0.4);
+}
+
+.augment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .augment-controls {
+    flex-direction: column;
+  }
+  
+  .augment-btn {
+    width: 100%;
+  }
+}

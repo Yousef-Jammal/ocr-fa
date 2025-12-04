@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import './App.css'
+import { TemplateSelector, AISchemaBuilder, DataAugmenter } from './components'
+import { Template } from './templates'
 
 // Types
 interface Job {
@@ -206,6 +208,25 @@ function App() {
             {/* Text Generation Form */}
             {activeTab === 'text' && (
               <div className="form-section">
+                {/* Template Selector */}
+                <TemplateSelector onSelect={(template) => {
+                  setTextSchema(JSON.stringify(template.schema, null, 2))
+                  setNumSamples(template.samples)
+                  if (template.prompts) {
+                    setImagePrompts(template.prompts.join('\n'))
+                  }
+                }} />
+
+                {/* AI Schema Builder */}
+                <AISchemaBuilder onSchemaGenerated={(schema) => {
+                  setTextSchema(JSON.stringify(schema, null, 2))
+                }} />
+
+                {/* Data Augmenter */}
+                <DataAugmenter onAugmented={(jobId) => {
+                  pollJobStatus(jobId)
+                }} />
+
                 <div className="form-group">
                   <label>Data Schema (JSON)</label>
                   <textarea

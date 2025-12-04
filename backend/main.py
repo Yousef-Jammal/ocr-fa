@@ -559,6 +559,184 @@ async def download_single_file(job_id: str):
         media_type="application/octet-stream"
     )
 
+# ==================== AI Schema Builder ====================
+
+class SchemaGenerationRequest(BaseModel):
+    description: str = Field(..., description="Natural language description of the data you need")
+
+@app.post("/ai/generate-schema")
+async def ai_generate_schema(request: SchemaGenerationRequest):
+    """🤖 AI-powered schema generation from natural language description"""
+    
+    generator = get_text_generator()
+    
+    if not generator.model:
+        raise HTTPException(status_code=503, detail="AI model not available")
+    
+    # Create prompt for schema generation
+    prompt = f"""Generate a JSON data schema for the following description:
+
+Description: {request.description}
+
+Create a schema with appropriate fields, types, and constraints. Output ONLY valid JSON in this format:
+{{
+  "field_name": {{"type": "string|integer|float|boolean|datetime|email", "description": "...", "examples": [...], "minimum": X, "maximum": Y}}
+}}
+
+Generate the schema now:"""
+    
+    try:
+        messages = [
+            {"role": "system", "content": "You are a data schema expert. Generate precise, well-structured JSON schemas from natural language descriptions. Output ONLY valid JSON without explanations."},
+            {"role": "user", "content": prompt}
+        ]
+        
+        text = generator.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        
+        model_inputs = generator.tokenizer([text], return_tensors="pt").to(generator.device)
+        
+        import torch
+        with torch.no_grad():
+            generated_ids = generator.model.generate(
+                **model_inputs,
+                max_new_tokens=1024,
+                temperature=0.7,
+                do_sample=True,
+                top_p=0.9
+            )
+        
+        generated_ids = [
+            output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        
+        response = generator.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        
+        # Extract JSON from response
+        start_idx = response.find('{')
+        end_idx = response.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1:
+            schema_json = response[start_idx:end_idx+1]
+            schema = json.loads(schema_json)
+            
+            return {
+                "schema": schema,
+                "description": request.description,
+                "generated_at": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate valid schema")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Schema generation failed: {str(e)}")
+
+# ==================== Data Augmentation ====================
+
+from fastapi import UploadFile, File
+import pandas as pd
+
+@app.post("/augment")
+async def augment_data(
+    file: UploadFile = File(...),
+    num_samples: int = 1000,
+    background_tasks: BackgroundTasks = None
+):
+    """🔄 Smart data augmentation - upload CSV, get similar synthetic data"""
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files supported")
+    
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {
+        "job_id": job_id,
+        "type": "augmentation",
+        "status": "processing",
+        "progress": 0.0,
+        "result": None,
+        "error": None,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    # Schedule augmentation task
+    background_tasks.add_task(_augment_data_task, job_id, file, num_samples)
+    
+    return {"job_id": job_id, "status": "processing"}
+
+async def _augment_data_task(job_id: str, file: UploadFile, num_samples: int):
+    """Background task for data augmentation"""
+    
+    try:
+        jobs[job_id]["progress"] = 10.0
+        
+        # Read CSV
+        content = await file.read()
+        df = pd.read_csv(io.BytesIO(content))
+        
+        jobs[job_id]["progress"] = 20.0
+        
+        # Analyze schema from CSV
+        schema = {}
+        for col in df.columns:
+            dtype = df[col].dtype
+            
+            if pd.api.types.is_integer_dtype(dtype):
+                schema[col] = {
+                    "type": "integer",
+                    "minimum": int(df[col].min()),
+                    "maximum": int(df[col].max())
+                }
+            elif pd.api.types.is_float_dtype(dtype):
+                schema[col] = {
+                    "type": "float",
+                    "minimum": float(df[col].min()),
+                    "maximum": float(df[col].max())
+                }
+            elif pd.api.types.is_bool_dtype(dtype):
+                schema[col] = {"type": "boolean"}
+            else:
+                # String or object - extract examples
+                unique_vals = df[col].unique()[:5].tolist()
+                schema[col] = {
+                    "type": "string",
+                    "examples": [str(v) for v in unique_vals if pd.notna(v)]
+                }
+        
+        jobs[job_id]["progress"] = 40.0
+        
+        # Generate synthetic data using the schema
+        generator = get_text_generator()
+        result = await generator.generate(
+            schema=schema,
+            num_samples=num_samples,
+            format="csv",
+            constraints=None
+        )
+        
+        jobs[job_id]["progress"] = 80.0
+        
+        # Save augmented data
+        output_path = OUTPUT_DIR / f"{job_id}.csv"
+        with open(output_path, "w", newline='') as f:
+            f.write(result)
+        
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["result"] = {
+            "file": str(output_path),
+            "samples_generated": num_samples,
+            "original_samples": len(df),
+            "schema": schema
+        }
+        
+    except Exception as e:
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+        print(f"Augmentation error: {e}")
+
 # ==================== WebSocket Endpoint ====================
 
 @app.websocket("/ws/{job_id}")
